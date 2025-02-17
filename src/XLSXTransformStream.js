@@ -14,10 +14,16 @@ export default class XLSXTransformStream extends Transform {
         super({ objectMode: true });
         this.options = options;
         this.initializeArchiver();
-        this.rowTransform = new XLSXRowTransform(this.options.shouldFormat);
+        this.sheetCount = 0;
+        this.addNextSheet();
+    }
 
+    addNextSheet() {
+        this.sheetCount++;
+        if (this.rowTransform != null) this.rowTransform.end();
+        this.rowTransform = new XLSXRowTransform(this.options.shouldFormat);
         this.zip.append(this.rowTransform, {
-            name: 'xl/worksheets/sheet1.xml',
+            name: `xl/worksheets/sheet${this.sheetCount}.xml`,
         });
     }
 
@@ -40,16 +46,8 @@ export default class XLSXTransformStream extends Transform {
             name: '_rels/.rels',
         });
 
-        this.zip.append(templates.Workbook, {
-            name: 'xl/workbook.xml',
-        });
-
         this.zip.append(templates.Styles, {
             name: 'xl/styles.xml',
-        });
-
-        this.zip.append(templates.WorkbookRels, {
-            name: 'xl/_rels/workbook.xml.rels',
         });
 
         this.zip.on('warning', (err) => {
@@ -62,6 +60,10 @@ export default class XLSXTransformStream extends Transform {
     }
 
     _transform(row, encoding, callback) {
+        if (this.rowTransform.rowCount >= 1000001) {
+            this.addNextSheet();
+        }
+
         if (this.rowTransform.write(row)) {
             process.nextTick(callback);
         } else {
@@ -71,6 +73,12 @@ export default class XLSXTransformStream extends Transform {
 
     _flush(callback) {
         this.rowTransform.end();
+        this.zip.append(templates.Workbook(this.sheetCount), {
+            name: 'xl/workbook.xml',
+        });
+        this.zip.append(templates.WorkbookRels(this.sheetCount), {
+            name: 'xl/_rels/workbook.xml.rels',
+        });
         this.zip.finalize().then(callback);
     }
 }
