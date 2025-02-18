@@ -60,7 +60,7 @@ export default class XLSXTransformStream extends Transform {
     }
 
     _transform(row, encoding, callback) {
-        if (this.rowTransform.rowCount >= 1000001) {
+        if (this.rowTransform.rowCount >= 1048576) {
             this.addNextSheet();
         }
 

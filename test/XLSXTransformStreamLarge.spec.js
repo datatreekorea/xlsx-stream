@@ -5,7 +5,7 @@ import path from 'path';
 import unzipper from 'unzipper';
 import XLSXTransformStream from '../src/XLSXTransformStream';
 
-const TEST_ROWS_COUNT = 2000000;
+const TEST_ROWS_COUNT = 1048577;
 
 describe('The XLSXTransformStream Large Files', () => {
     it(`The transformed xlsx file corresponds to the snapshot xlsx large file (${TEST_ROWS_COUNT} rows)`, async () => {
